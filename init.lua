@@ -102,7 +102,7 @@ vim.g.have_nerd_font = true
 vim.opt.number = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
--- vim.opt.relativenumber = true
+vim.opt.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.mouse = 'a'
@@ -166,7 +166,9 @@ vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
 -- Diagnostic keymaps
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
-
+vim.keymap.set('n', '<leader>o', vim.diagnostic.open_float, { desc = 'Open diagnostic fl[O]at.' })
+vim.keymap.set('n', '<leader>n', vim.diagnostic.goto_next, { desc = 'Goto [N]ext diagnostic.' })
+vim.keymap.set('n', '<leader>p', vim.diagnostic.goto_prev, { desc = 'Goto [P]revious diagnostic.' })
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
 -- is not what someone will guess without a bit more experience.
@@ -254,6 +256,23 @@ require('lazy').setup({
         changedelete = { text = '~' },
       },
     },
+  },
+
+  -- Load git-integration Neogit
+  {
+    'NeogitOrg/neogit',
+    dependencies = {
+      'nvim-lua/plenary.nvim', -- required
+      'sindrets/diffview.nvim', -- optional - Diff integration
+    },
+    config = true,
+  },
+
+  { -- PICO-8 highlights
+    'bakudankun/pico-8.vim',
+    name = 'PICO-8',
+    -- lazy-load on filetype
+    ft = 'pico8',
   },
 
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
@@ -604,25 +623,43 @@ require('lazy').setup({
       --  - capabilities (table): Override fields in capabilities. Can be used to disable certain LSP features.
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
+      --
+
+      -- Setup LSP for pico8 https://github.com/japhib/pico8-ls/issues/34#issuecomment-2097190834
+      vim.api.nvim_create_autocmd({ 'BufNew', 'BufEnter' }, {
+        pattern = { '*.p8' },
+        callback = function(args)
+          vim.lsp.start {
+            name = 'pico8-ls',
+            cmd = { 'pico8-ls', '--stdio' },
+            root_dir = vim.fs.dirname(vim.api.nvim_buf_get_name(args.buf)),
+            -- Setup your keybinds in the on_attach function
+            on_attach = on_attach,
+          }
+        end,
+      })
+
+      -- lsp servers
       local servers = {
         -- clangd = {},
         gopls = {},
         -- ruff_lsp = {},
-        ruff = {},
+        -- ruff = {},
 
+        -- pico8_ls = {},
         pyright = {
-          settings = {
-            pyright = {
-              -- Using Ruff's import organizer
-              disableOrganizeImports = true,
-            },
-            python = {
-              analysis = {
-                -- Ignore all files for analysis to exclusively use Ruff for linting
-                ignore = { '*' },
-              },
-            },
-          },
+          -- settings = {
+          -- pyright = {
+          -- Using Ruff's import organizer
+          -- disableOrganizeImports = true,
+          -- },
+          -- python = {
+          -- analysis = {
+          -- Ignore all files for analysis to exclusively use Ruff for linting
+          -- ignore = { '*' },
+          -- },
+          -- },
+          -- },
         },
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
@@ -649,6 +686,12 @@ require('lazy').setup({
           },
         },
       }
+      -- GODOT LSP
+      local gdscript_config = {
+        capabilities = capabilities,
+        settings = {},
+      }
+      require('lspconfig').gdscript.setup(gdscript_config)
 
       -- Ensure the servers and tools above are installed
       --  To check the current status of installed tools and/or manually install
@@ -850,8 +893,8 @@ require('lazy').setup({
     init = function()
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
-      -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'. (default är tokyonight-night)
+      vim.cmd.colorscheme 'tokyonight-moon'
 
       -- You can configure highlights by doing something like:
       vim.cmd.hi 'Comment gui=none'

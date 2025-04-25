@@ -775,8 +775,8 @@ require('lazy').setup({
         htmldjango = { 'djlint' },
         css = { 'prettier' },
         json = { 'prettier' },
-        yaml = { 'prettier' },
-        markdown = { 'prettier' },
+        -- yaml = { 'prettier' },
+        -- markdown = { 'prettier' },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --

@@ -284,6 +284,21 @@ require('lazy').setup({
     ft = 'pico8',
   },
 
+  -- lsp SAGA
+  -- https://nvimdev.github.io/lspsaga/
+  {
+    'nvimdev/lspsaga.nvim',
+    config = function()
+      require('lspsaga').setup {}
+      local keymap = vim.keymap.set
+      keymap('n', 'gp', '<cmd>Lspsaga peek_definition<CR>', { desc = 'Peek definition' })
+      keymap('n', 'gh', '<cmd>Lspsaga hover_doc<CR>', { desc = 'Hover doc' })
+    end,
+    dependencies = {
+      'nvim-treesitter/nvim-treesitter', -- optional
+      'nvim-tree/nvim-web-devicons', -- optional
+    },
+  },
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
   --
   -- This is often very useful to both group configuration, as well as handle

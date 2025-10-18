@@ -91,7 +91,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
@@ -102,7 +102,7 @@ vim.g.have_nerd_font = false
 vim.o.number = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
--- vim.o.relativenumber = true
+vim.o.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.o.mouse = 'a'
@@ -173,8 +173,12 @@ vim.o.confirm = true
 --  See `:help hlsearch`
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
--- Diagnostic keymaps
+-- Disable F1 in alla lägen
+vim.keymap.set({ 'n', 'i', 'v' }, '<F1>', '<Nop>', { noremap = true })
 vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+vim.keymap.set('n', '<leader>o', vim.diagnostic.open_float, { desc = 'Open diagnostic fl[O]at.' })
+-- vim.keymap.set('n', '<leader>n', vim.diagnostic.goto_next, { desc = 'Goto [N]ext diagnostic.' })
+-- vim.keymap.set('n', '<leader>p', vim.diagnostic.goto_prev, { desc = 'Goto [P]revious diagnostic.' })
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
@@ -255,7 +259,30 @@ require('lazy').setup({
   --
   -- Use `opts = {}` to automatically pass options to a plugin's `setup()` function, forcing the plugin to be loaded.
   --
+  {
+    'NeogitOrg/neogit',
+    dependencies = {
+      'nvim-lua/plenary.nvim', -- required
+      'sindrets/diffview.nvim', -- optional - Diff integration
+    },
+    config = true,
+  },
 
+  {
+    'MeanderingProgrammer/render-markdown.nvim',
+    dependencies = { 'nvim-treesitter/nvim-treesitter' },
+    -- dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-tree/nvim-web-devicons' }, -- if you prefer nvim-web-devicons
+    ---@module 'render-markdown'
+    ---@type render.md.UserConfig
+    opts = {},
+  },
+
+  { -- PICO-8 highlights
+    'bakudankun/pico-8.vim',
+    name = 'PICO-8',
+    -- lazy-load on filetype
+    ft = 'pico8',
+  },
   -- Alternatively, use `config = function() ... end` for full control over the configuration.
   -- If you prefer to call `setup` explicitly, use:
   --    {
@@ -670,10 +697,40 @@ require('lazy').setup({
       --  - capabilities (table): Override fields in capabilities. Can be used to disable certain LSP features.
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
+      --
+      -- Setup LSP for pico8 https://github.com/japhib/pico8-ls/issues/34#issuecomment-2097190834
+      -- vim.api.nvim_create_autocmd({ 'BufNew', 'BufEnter' }, {
+      --   pattern = { '*.p8' },
+      --   callback = function(args)
+      --     vim.lsp.start {
+      --       name = 'pico8-ls',
+      --       cmd = { 'pico8-ls', '--stdio' },
+      --       root_dir = vim.fs.dirname(vim.api.nvim_buf_get_name(args.buf)),
+      --       -- Setup your keybinds in the on_attach function
+      --       on_attach = on_attach,
+      --     }
+      --   end,
+      -- })
+
       local servers = {
         -- clangd = {},
-        -- gopls = {},
-        -- pyright = {},
+        gopls = {},
+        cssls = {
+          cmd = { 'vscode-css-language-server', '--stdio' },
+          settings = {
+            css = {
+              validate = true,
+            },
+            less = {
+              validate = true,
+            },
+            scss = {
+              validate = true,
+            },
+          },
+        },
+
+        pyright = {},
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
@@ -681,7 +738,7 @@ require('lazy').setup({
         --    https://github.com/pmizio/typescript-tools.nvim
         --
         -- But for many setups, the LSP (`ts_ls`) will work just fine
-        -- ts_ls = {},
+        ts_ls = {},
         --
 
         lua_ls = {
@@ -699,6 +756,12 @@ require('lazy').setup({
           },
         },
       }
+      -- -- GODOT LSP
+      -- local gdscript_config = {
+      --   capabilities = capabilities,
+      --   settings = {},
+      -- }
+      -- require('lspconfig').gdscript.setup(gdscript_config)
 
       -- Ensure the servers and tools above are installed
       --
@@ -716,6 +779,10 @@ require('lazy').setup({
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
+        'prettier', -- formatting of js, html, css etc
+        'djlint', -- djangohtml formatting
+        'prettierd', -- js
+        'pyright', -- python lsp
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -768,11 +835,17 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
+        html = { 'prettier' },
+        htmldjango = { 'djlint' },
+        css = { 'prettier' },
+        json = { 'prettier' },
+        -- yaml = { 'prettier' },
+        -- markdown = { 'prettier' },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
+        javascript = { 'prettierd', 'prettier', stop_after_first = true },
       },
     },
   },
@@ -894,7 +967,7 @@ require('lazy').setup({
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      vim.cmd.colorscheme 'tokyonight-moon'
     end,
   },
 
